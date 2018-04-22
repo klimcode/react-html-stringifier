@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const PATH = require('path');
+const FS = require('fs');
 const SHELL = require('child_process').execSync;
 const EXPRESS = require('express');
 const CORS = require('cors');
@@ -18,8 +19,9 @@ const settings = {
 const inputDirName = 'build';
 const outputDirName = 'static';
 const outputFileName = 'index.html';
-const inputDir = PATH.resolve(__dirname, inputDirName);
-const outputDir = PATH.resolve(__dirname, outputDirName);
+const appDir = FS.realpathSync(process.cwd());
+const inputDir = PATH.resolve(appDir, inputDirName);
+const outputDir = PATH.resolve(appDir, outputDirName);
 const outputFilePath = PATH.resolve(outputDir, outputFileName);
 
 
