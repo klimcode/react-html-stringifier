@@ -15,7 +15,7 @@ const inputDir = PATH.resolve(__dirname, inputDirName);
 const outputDir = PATH.resolve(__dirname, outputDirName);
 const outputFilePath = PATH.resolve(outputDir, outputFileName);
 const host = 'localhost';
-const port = 8765;
+const port = 8000;
 
 
 const log = function logToConsole(message) {
@@ -26,6 +26,7 @@ const log = function logToConsole(message) {
 const copyDir = function copyInputDirContentToOutputDir(args, resolve) {
   const src = args[0];
   const dist = args[1];
+  SHELL(`rm -r ${dist}`);
   SHELL(`mkdir -p ${dist}`);
   SHELL(`cp -r ${src}/* ${dist}`);
   resolve();
@@ -36,7 +37,7 @@ const readInputHtml = function readInputHtmlFile(args, resolve) {
   FILE.read(path, resolve);
 };
 const injectScript = function injectScriptToInputHtml(input, resolve) {
-  const htmlWithScriptInjected = input.replace('</body>', `<script id="stringifier">(${SCRIPT})</script></body>`);
+  const htmlWithScriptInjected = input.replace('</body>', `<script id="stringifier">var G = ${SCRIPT}; G()</script></body>`);
 
   FILE.write(
     outputFilePath,
@@ -71,7 +72,7 @@ const openBrowser = function openBrowserForRendering(args, resolve) {
 const postProcess = function processInput(inputHtml, resolve) {
   const resHtml = inputHtml
     .replace(/<script.*js\/main.*<\/script>/, '')
-    .replace(/<script id="stringifier".*<\/script>/, '');
+    .replace(/<script id="stringifier">[\s\S]*<\/script>/, '');
 
   FILE.write(
     outputFilePath,
@@ -79,15 +80,16 @@ const postProcess = function processInput(inputHtml, resolve) {
     () => {
       log(`Html placed to file: ${outputFilePath}`);
       resolve();
+      process.exit(0);
     },
   );
 };
 
-const process = [
+const roadmap = [
   [inputDir, outputDir],      copyDir,
   [copyDir, outputFilePath],  readInputHtml,
   [readInputHtml],            injectScript,
   [injectScript, outputDir],  startServer, openBrowser,
   [startServer],              postProcess,
 ];
-BRIEF(process);
+BRIEF(roadmap);
