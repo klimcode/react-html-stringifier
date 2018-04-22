@@ -33,6 +33,7 @@
     "jest": "^22.4.3"
   },
   "dependencies": {
+    "brief-async": "^0.4.0",
     "cors": "^2.8.4",
     "express": "^4.16.3",
     "fs-handy-wraps": "^2.1.0",

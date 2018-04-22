@@ -1,69 +1,93 @@
-const express = require('express');
+const PATH = require('path');
+const SHELL = require('child_process').execSync;
+const EXPRESS = require('express');
 const CORS = require('cors');
 const FILE = require('fs-handy-wraps');
 const OPN = require('opn');
 const SCRIPT = require('./browser-script').toString();
+const BRIEF = require('brief-async');
 
 
-const inputDir = 'build';
-const inputFileName = './build/index.html';
+const inputDirName = 'build';
+const outputDirName = 'static';
 const outputFileName = 'index.html';
-let initialHtmlContent;
+const inputDir = PATH.resolve(__dirname, inputDirName);
+const outputDir = PATH.resolve(__dirname, outputDirName);
+const outputFilePath = PATH.resolve(outputDir, outputFileName);
+const host = 'localhost';
+const port = 8765;
 
 
 const log = function logToConsole(message) {
   console.log(message); // eslint-disable-line no-console
 };
-const postProcess = function processInput(input) {
-  const html = `<!DOCTYPE html> + ${input}`;
+
+
+const copyDir = function copyInputDirContentToOutputDir(args, resolve) {
+  const src = args[0];
+  const dist = args[1];
+  SHELL(`mkdir -p ${dist}`);
+  SHELL(`cp -r ${src}/* ${dist}`);
+  resolve();
+};
+const readInputHtml = function readInputHtmlFile(args, resolve) {
+  const path = args[1];
+
+  FILE.read(path, resolve);
+};
+const injectScript = function injectScriptToInputHtml(input, resolve) {
+  const htmlWithScriptInjected = input.replace('</body>', `<script id="stringifier">(${SCRIPT})</script></body>`);
+
   FILE.write(
-    outputFileName,
-    html,
-    () => log(`Html placed to file: ${outputFileName}`),
-  );
-  FILE.write(
-    inputFileName,
-    initialHtmlContent,
-    () => {
-      log(`Initial Content returned to ${inputFileName}`);
-      // process.exit(0);
-    },
+    outputFilePath,
+    htmlWithScriptInjected,
+    resolve,
   );
 };
-const startServer = function startExpressServer() {
-  const server = express();
-  server.use(express.json());
+
+const startServer = function startRecipientServer(_, resolve) {
+  const server = EXPRESS();
+  server.use(EXPRESS.json());
   server.use(CORS({ credentials: true, origin: true }));
   server.post('/', (req, res) => {
     log('POST message received');
     res.send('React Stringifier said: ⊙﹏⊙');
-    postProcess(req.body.html);
+    resolve(req.body.html);
   });
-  server.listen(8765);
+  server.listen(port);
 };
-const openBrowser = function openBrowserUsingServeApp() {
-  const server = express();
-  server.use('/', express.static(__dirname + '/' + inputDir));
-  OPN('http://localhost:8766');
-  server.listen(8766, 'localhost');
+const openBrowser = function openBrowserForRendering(args, resolve) {
+  const dir = args[1];
+  const renderingHost = host;
+  const renderingPort = port + 1;
+  const server = EXPRESS();
+  server.use('/', EXPRESS.static(dir));
+  server.listen(renderingPort, renderingHost);
+  OPN(`http://${renderingHost}:${renderingPort}`)
+    .then(() => log('browser opened'))
+    .then(resolve);
 };
-const injectScript = function injectScriptToInputHtml(htmlWithScript) {
+
+const postProcess = function processInput(inputHtml, resolve) {
+  const resHtml = inputHtml
+    .replace(/<script.*js\/main.*<\/script>/, '')
+    .replace(/<script id="stringifier".*<\/script>/, '');
+
   FILE.write(
-    inputFileName,
-    htmlWithScript,
+    outputFilePath,
+    resHtml,
     () => {
-      startServer();
-      openBrowser();
+      log(`Html placed to file: ${outputFilePath}`);
+      resolve();
     },
   );
 };
 
-
-FILE.read(
-  inputFileName,
-  (content) => {
-    initialHtmlContent = content;
-    const scriptInjected = content.replace('</body>', `<script>(${SCRIPT})</script></body>`);
-    injectScript(scriptInjected);
-  },
-);
+const process = [
+  [inputDir, outputDir],      copyDir,
+  [copyDir, outputFilePath],  readInputHtml,
+  [readInputHtml],            injectScript,
+  [injectScript, outputDir],  startServer, openBrowser,
+  [startServer],              postProcess,
+];
+BRIEF(process);
