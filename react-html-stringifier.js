@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const PATH = require('path');
 const SHELL = require('child_process').execSync;
 const EXPRESS = require('express');
@@ -29,7 +31,11 @@ const log = function logToConsole(message) {
 const copyDir = function copyInputDirContentToOutputDir(args, resolve) {
   const src = args[0];
   const dist = args[1];
-  SHELL(`rm -r ${dist}`);
+  try {
+    SHELL(`rm -r -d ${dist}`);
+  } catch (e) {
+    log(`folder ${dist} has been created`);
+  }
   SHELL(`mkdir -p ${dist}`);
   SHELL(`cp -r ${src}/* ${dist}`);
   resolve();
