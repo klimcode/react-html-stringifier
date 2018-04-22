@@ -59,7 +59,7 @@ const injectScript = function injectScriptToInputHtml(input, resolve) {
   );
 };
 
-const startServer = function openBrowserForRendering(args, resolve) {
+const startServer = function startServerAndOpenBrowser(args, resolve) {
   const dir = args[1];
   const server = EXPRESS();
   const { host, port } = settings;
@@ -69,7 +69,7 @@ const startServer = function openBrowserForRendering(args, resolve) {
   server.use(CORS({ credentials: true, origin: true }));
   server.post('/', (req, res) => {
     if (req.body) {
-      res.send('React Stringifier said: ⊙﹏⊙');
+      res.send('React Stringifier has done its job ⊙﹏⊙');
       resolve(req.body.html);
     }
   });
