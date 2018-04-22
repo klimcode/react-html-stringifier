@@ -8,14 +8,17 @@ const SCRIPT = require('./browser-script').toString();
 const BRIEF = require('brief-async');
 
 
+const settings = {
+  host: 'localhost',
+  port: 8765,
+  timeout: 300,
+};
 const inputDirName = 'build';
 const outputDirName = 'static';
 const outputFileName = 'index.html';
 const inputDir = PATH.resolve(__dirname, inputDirName);
 const outputDir = PATH.resolve(__dirname, outputDirName);
 const outputFilePath = PATH.resolve(outputDir, outputFileName);
-const host = 'localhost';
-const port = 8000;
 
 
 const log = function logToConsole(message) {
@@ -37,7 +40,9 @@ const readInputHtml = function readInputHtmlFile(args, resolve) {
   FILE.read(path, resolve);
 };
 const injectScript = function injectScriptToInputHtml(input, resolve) {
-  const htmlWithScriptInjected = input.replace('</body>', `<script id="stringifier">var G = ${SCRIPT}; G()</script></body>`);
+  const scriptFIlled = SCRIPT
+    .replace(/'%(.*)%'/g, (_, prop) => settings[prop]);
+  const htmlWithScriptInjected = input.replace('</body>', `<script id="stringifier">(${scriptFIlled})()</script></body>`);
 
   FILE.write(
     outputFilePath,
@@ -46,30 +51,28 @@ const injectScript = function injectScriptToInputHtml(input, resolve) {
   );
 };
 
-const startServer = function startRecipientServer(_, resolve) {
+const startServer = function openBrowserForRendering(args, resolve) {
+  const dir = args[1];
   const server = EXPRESS();
+  const { host, port } = settings;
+
+  server.use('/', EXPRESS.static(dir));
   server.use(EXPRESS.json());
   server.use(CORS({ credentials: true, origin: true }));
   server.post('/', (req, res) => {
-    log('POST message received');
-    res.send('React Stringifier said: ⊙﹏⊙');
-    resolve(req.body.html);
+    if (req.body) {
+      res.send('React Stringifier said: ⊙﹏⊙');
+      resolve(req.body.html);
+    }
   });
-  server.listen(port);
-};
-const openBrowser = function openBrowserForRendering(args, resolve) {
-  const dir = args[1];
-  const renderingHost = host;
-  const renderingPort = port + 1;
-  const server = EXPRESS();
-  server.use('/', EXPRESS.static(dir));
-  server.listen(renderingPort, renderingHost);
-  OPN(`http://${renderingHost}:${renderingPort}`)
-    .then(() => log('browser opened'))
-    .then(resolve);
+  server.listen(port, host);
+
+  OPN(`http://${host}:${port}`)
+    .then(() => log('browser opened'));
 };
 
 const postProcess = function processInput(inputHtml, resolve) {
+  log('POST message received');
   const resHtml = inputHtml
     .replace(/<script.*js\/main.*<\/script>/, '')
     .replace(/<script id="stringifier">[\s\S]*<\/script>/, '');
@@ -89,7 +92,7 @@ const roadmap = [
   [inputDir, outputDir],      copyDir,
   [copyDir, outputFilePath],  readInputHtml,
   [readInputHtml],            injectScript,
-  [injectScript, outputDir],  startServer, openBrowser,
+  [injectScript, outputDir],  startServer,
   [startServer],              postProcess,
 ];
 BRIEF(roadmap);

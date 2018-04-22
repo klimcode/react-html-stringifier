@@ -2,23 +2,20 @@
 
 This package is designed for:
 
-1. single page static websites ("landing pages")
-2. extremely light weight websites
-3. based on create-react-app (without eject)
+1. extremely lightweight single page static websites ("landing pages")
+2. based on create-react-app (without eject)
 
-It produces a html-file without a React bundle. It's possible to add custom vanilla-JS scripts there.
+It produces a html-file without a React js-bundle.
 
 ## 3 simple steps
 
-1. Add this code to `index.html` within the `body` tag:
+1. Install the package: `npm i -D react-html-stringifier` or `yarn add -D react-html-stringifier`
+2. Add this line to a `scripts` section of the `package.json`: `"static": "build && react-html-stringifier"`
+3. Run: `npm run static` or `yarn static`
 
-```js
-fetch('http://localhost:8765/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ html: document.getElementsByTagName('html')[0].outerHTML }),
-})
-  .then(r => r.text())
-  .then(console.log)
-  .catch(() => console.error('can not send a HTML to React-Stringifier'));
-```
+## Explanation
+
+1. Stringifier will copy the content of your `build` directory to a new one called `static` to work with it.
+2. Then it injects a content of `browser-script.js` into your `index.html` file and starts an `express` server.
+3. It serves a website and receives its HTML via POST request from `browser-script.js`.
+4. Then HTML is received the server removes a React bundle and a `browser-script.js` script from it.
