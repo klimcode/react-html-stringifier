@@ -1,6 +1,6 @@
 {
   "name": "react-html-stringifier",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Easy way to yield a plain-html web page without any JS from your React website",
   "main": "react-html-stringifier.js",
   "bin": {
@@ -28,18 +28,15 @@
     "url": "https://github.com/klimcode/react-html-stringifier/issues"
   },
   "homepage": "https://github.com/klimcode/react-html-stringifier#readme",
-  "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.10.0",
-    "eslint-plugin-jest": "^21.15.0",
-    "jest": "^22.4.3"
-  },
   "dependencies": {
     "brief-async": "^0.4.0",
     "cors": "^2.8.4",
     "express": "^4.16.3",
-    "fs-handy-wraps": "^2.1.0",
+    "fs-handy-wraps": "^3.0.2",
     "opn": "^5.3.0"
+  },
+  "stringifier": {
+    "output": "docs",
+    "removeBundle": true
   }
 }

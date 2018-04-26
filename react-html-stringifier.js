@@ -1,32 +1,35 @@
 #!/usr/bin/env node
 
 const PATH = require('path');
-const FS = require('fs');
 const SHELL = require('child_process').execSync;
 const EXPRESS = require('express');
 const CORS = require('cors');
-const FILE = require('fs-handy-wraps');
 const OPN = require('opn');
-const SCRIPT = require('./browser-script').toString();
+// Klimcode scripts
 const BRIEF = require('brief-async');
+const FILE = require('fs-handy-wraps');
+const SCRIPT = require('./browser-script').toString();
+
+const appDir = FILE.CWD;
+const userSettings = require(PATH.join(appDir, 'package.json')).stringifier;
 
 
-const settings = {
+const defSettings = {
+  input: 'build',
+  output: 'docs',
   host: 'localhost',
   port: 8765,
   timeout: 300,
 };
-const inputDirName = 'build';
-const outputDirName = 'static';
+const settings = Object.assign(defSettings, userSettings);
 const outputFileName = 'index.html';
-const appDir = FS.realpathSync(process.cwd());
-const inputDir = PATH.resolve(appDir, inputDirName);
-const outputDir = PATH.resolve(appDir, outputDirName);
-const outputFilePath = PATH.resolve(outputDir, outputFileName);
+const INPUT_DIR = PATH.resolve(appDir, settings.input);
+const OUTPUT_DIR = PATH.resolve(appDir, settings.output);
+const outputFilePath = PATH.resolve(OUTPUT_DIR, outputFileName);
 
 
-const log = function logToConsole(message) {
-  console.log(message); // eslint-disable-line no-console
+const log = function logToConsole(...args) {
+  console.log(...args); // eslint-disable-line no-console
 };
 
 
@@ -81,9 +84,14 @@ const startServer = function startServerAndOpenBrowser(args, resolve) {
 
 const postProcess = function processInput(inputHtml, resolve) {
   log('POST message received');
-  const resHtml = inputHtml
-    .replace(/<script.*js\/main.*<\/script>/, '')
+  let resHtml = inputHtml
     .replace(/<script id="stringifier">[\s\S]*<\/script>/, '');
+
+  if (settings.removeBundle) {
+    resHtml = resHtml
+      .replace(/<script.*js\/main.*<\/script>/, '')
+      .replace(/<script.*\.chunk\.js.*<\/script>/, '');
+  }
 
   FILE.write(
     outputFilePath,
@@ -97,10 +105,10 @@ const postProcess = function processInput(inputHtml, resolve) {
 };
 
 const roadmap = [
-  [inputDir, outputDir],      copyDir,
+  [INPUT_DIR, OUTPUT_DIR],    copyDir,
   [copyDir, outputFilePath],  readInputHtml,
   [readInputHtml],            injectScript,
-  [injectScript, outputDir],  startServer,
+  [injectScript, OUTPUT_DIR], startServer,
   [startServer],              postProcess,
 ];
 BRIEF(roadmap);

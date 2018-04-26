@@ -1,5 +1,6 @@
 build
 static
+docs
 
 # IDE workspaces
 *.sublime-project
